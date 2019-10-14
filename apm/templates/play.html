@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+  <title>Запись #{{ play.id }}</title>
+  <style type="text/css">
+    .timer {
+      font-family: 'Open Sans', sans-serif;
+    }
+  </style>
+{% endblock %}
+
+
+{% block body %}
+  <div class="container p-2">
+    <h1 class="display-3 text-nowrap timer">
+      <span id="minutes_elapsed"></span>:<span id="seconds_elapsed"></span>
+    </h1>
+    <div class="d-flex">
+      <div class="flex-grow-1 align-self-end">
+        <div style="font-size: 150%">
+          APM:
+          <span id="current_apm" style="font-weight: 800; color: yellowGreen;"></span>
+          / <span id="average_apm" style="color: white;"></span>
+        </div>
+      </div>
+      <div class="align-self-end">
+        <div class="text-muted">
+          <a href="{{ request.path }}" class="text-reset">Запись #{{ play.id }}</a>
+          |
+          <a href="/" class="text-reset">назад</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+
+{% block extra_js %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/loglevel/1.6.4/loglevel.min.js" integrity="sha256-ACTlnmNCkOooSKkPCKYbiex8WLE82aeiN+Z9ElZag5Q=" crossorigin="anonymous"></script>
+
+  <script type="text/javascript">
+
+    async function waitTillSocketOpen(webSocket){
+      return new Promise((resolve, reject) => {
+        const onSocketClose = ()=>{
+          reject(new WebsocketClosed());
+          webSocket.removeEventListener('open', onWebsocketOpen);
+        }
+
+        const onWebsocketOpen = event => {
+          resolve();
+          webSocket.removeEventListener('close', onSocketClose);
+        }
+        webSocket.addEventListener('close', onSocketClose);
+        webSocket.addEventListener('open', onWebsocketOpen);
+      });
+    }
+
+    async function waitForIncomeMsg(webSocket){
+      return new Promise((resolve, reject) => {
+        const onSocketClose = ()=>{
+          reject(new WebsocketClosed());
+          webSocket.removeEventListener('message', onMsgReceive);
+        }
+
+        const onMsgReceive = event => {
+          resolve(event.data);
+          webSocket.removeEventListener('close', onSocketClose);
+        }
+        webSocket.addEventListener('close', onSocketClose);
+        webSocket.addEventListener('message', onMsgReceive);
+      });
+    }
+  </script>
+  <script type="text/javascript">
+
+    function padToTwo(number) {
+      if (number<=9) { number = ("0"+number).slice(-4); }
+      return number;
+    }
+
+    let playId = '{{ play.id }}';
+    let websocketAddress = `ws://${window.location.host}/ws/play/${playId}/`
+    
+    async function listenSocket(){
+      const socket = new WebSocket(websocketAddress);
+
+      await waitTillSocketOpen(socket);
+
+      log.info('Websocket connection established');
+
+      while (1){
+        const dataString = await waitForIncomeMsg(socket);
+        const data = JSON.parse(dataString);
+
+        document.getElementById('current_apm').innerText = data.current_apm;
+        document.getElementById('average_apm').innerText = data.average_apm;
+        // document.getElementById('weighted_apm').innerText = data.weighted_apm;
+
+        let [minutesElapsed, secondsElapsed] = data.elapsed;
+        document.getElementById('minutes_elapsed').innerText = padToTwo(minutesElapsed);
+        document.getElementById('seconds_elapsed').innerText = padToTwo(secondsElapsed);
+      }
+    }
+
+    async function listenSocketWithReconnects(){
+      while (true){
+        try {
+          await listenSocket();
+
+        } catch (error){
+          if (error instanceof WebsocketClosed){
+            log.info('Connection lost. Try to reconnect in 1 sec.')
+            await sleep(1000);
+            continue;
+          }
+
+          throw error;
+        }
+      }
+    }
+
+    listenSocketWithReconnects();
+  </script>
+{% endblock %}
