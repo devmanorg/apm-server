@@ -8,8 +8,8 @@
 
 Установите зависимости:
 
-```
-pip install -r requirements.txt
+```sh
+$ pip install -r requirements.txt
 ```
 
 Проект настраивается через переменные окружения. Указывать их не обязательно. Доступные настройки:
@@ -25,13 +25,13 @@ SECRET_KEY='5hv@(79%2b-u*rvq1@yr%=$(8kpr7y!#16jmi!prlxfh%kd*%m'
 Перед запуском сайта инициализируйте базу данных:
 
 ```sh
-python3 manage.py migrate
+$ python3 manage.py migrate
 ```
 
 Осталось запустить разработческий веб-сервер:
 
 ```sh
-python3 manage.py runserver
+$ python3 manage.py runserver
 ```
 
 Сайт откроется по адресу [127.0.0.1:8000](http://127.0.0.1:8000).
