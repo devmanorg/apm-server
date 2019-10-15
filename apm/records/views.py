@@ -30,6 +30,7 @@ def register_play(request):
 
 
 @csrf_exempt
+@require_http_methods(["POST"])
 def track(request, play_id):
     play = get_object_or_404(Play, id=play_id)
     Event.objects.create(play=play)
