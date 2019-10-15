@@ -32,7 +32,6 @@ def register_play(request):
 @csrf_exempt
 def track(request, play_id):
     play = get_object_or_404(Play, id=play_id)
-    print('Got request', request)
     Event.objects.create(play=play)
     return JsonResponse({
         'status': 'ok'

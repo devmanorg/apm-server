@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 
+
 class Play(models.Model):
     created = models.DateTimeField('создана', default=timezone.now, null=True, blank=True)
     terminated = models.DateTimeField('завершено', null=True, blank=True)
